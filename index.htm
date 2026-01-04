@@ -3,30 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Human State Lab | Ibonarium</title>
+<title>Human State Lab | Live Signals</title>
 <style>
 body, html {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: #000; color: #cfefff;
+  font-family: 'Segoe UI', sans-serif;
   overflow: hidden;
-  color: #cfefff;
 }
-#stars { position: absolute; width: 100%; height: 100%; background: black; }
-#content { position: relative; z-index:2; padding: 20px; }
+#stars { position:absolute; width:100%; height:100%; background:black; }
+#content { position:relative; z-index:2; padding:20px; }
 h1 { text-align:center; color:#0cf; font-size:2em; }
-.signal-panel { display:flex; flex-wrap:wrap; justify-content:center; gap:15px; margin-top:25px; }
+.signal-panel {
+  display:flex; flex-wrap:wrap;
+  justify-content:center; gap:15px;
+  margin-top:25px;
+}
 .signal-box {
-  width:230px; padding:10px; background:rgba(10,10,20,0.8);
-  border:1px solid #0cf; border-radius:8px;
+  width:230px; padding:10px;
+  background:rgba(10,10,20,0.8);
+  border:1px solid #0cf;
+  border-radius:8px;
 }
 .signal-box h2 { margin:0; font-size:1em; color:#0ff; }
-.signal-box p { font-size:0.9em; color:#cfefff; margin-top:6px; min-height:1.4em; }
+.signal-box p { font-size:0.9em; margin-top:6px; min-height:1.4em; }
 .star {
-  position:absolute; width:2px; height:2px; background:white; border-radius:50%;
+  position:absolute; width:2px; height:2px;
+  background:white; border-radius:50%;
   opacity:0.7; animation:twinkle 2s infinite;
 }
 @keyframes twinkle { 0%,100%{opacity:0.8;} 50%{opacity:0.2;} }
@@ -38,73 +42,71 @@ h1 { text-align:center; color:#0cf; font-size:2em; }
 <div id="content">
   <h1>Human State Lab | Live Signals</h1>
   <div class="signal-panel">
-    <div class="signal-box" id="twitterTrends"><h2>Twitter Trending</h2><p>Завантаження...</p></div>
     <div class="signal-box" id="googleTrends"><h2>Google Search Trends</h2><p>Завантаження...</p></div>
+    <div class="signal-box" id="redditHot"><h2>Reddit Hot Topics</h2><p>Завантаження...</p></div>
     <div class="signal-box" id="weatherNow"><h2>Погода (Kyiv)</h2><p>Завантаження...</p></div>
   </div>
 </div>
 
 <script>
-// ===================== Зорі =====================
+// ✦ Анімація зірок
 const stars = document.getElementById('stars');
 for(let i=0; i<200; i++){
   let s = document.createElement('div');
-  s.className='star';
-  s.style.top=Math.random()*100+'%';
-  s.style.left=Math.random()*100+'%';
-  s.style.width=1+Math.random()*2+'px';
-  s.style.height=s.style.width;
+  s.className = 'star';
+  s.style.top = Math.random()*100+'%';
+  s.style.left = Math.random()*100+'%';
+  s.style.width = 1+Math.random()*2+'px';
+  s.style.height = s.style.width;
   stars.appendChild(s);
 }
 
-// ===================== LIVE СИГНАЛИ =====================
-
-// Twitter trending (Trendstools)
-async function getTwitterTrends() {
-  try {
-    const res = await fetch("https://trendstools.net/json/twitter/Ukraine");
-    const data = await res.json();
-    if(data && data.length){
-      return data.slice(0,3).map(x => x.tag || x).join(", ");
-    }
-    return "немає даних";
-  } catch(e){ return "помилка"; }
-}
-
-// Google Search trends (Trendstools)
+// ✦ Google search тренди (Trendstools free JSON)
 async function getGoogleTrends() {
   try {
     const res = await fetch("https://trendstools.net/json/google/Ukraine");
     const data = await res.json();
-    if(data && data.length){
+    if(data && data.length) {
       return data.slice(0,3).map(x => x.query || x).join(", ");
     }
     return "немає даних";
   } catch(e){ return "помилка"; }
 }
 
-// Погода через wttr.in
-async function getWeather() {
+// ✦ Reddit Hot Topics (відкрито без ключа)
+async function getRedditHot(){
   try {
-    const res = await fetch("https://wttr.in/Kyiv?format=j1");
-    const data = await res.json();
-    const temp = data.current_condition[0].temp_C;
-    const desc = data.current_condition[0].weatherDesc[0].value;
-    return `${temp}°C, ${desc}`;
+    const res = await fetch("https://www.reddit.com/r/all/hot.json?limit=3");
+    const json = await res.json();
+    return json.data.children
+      .map(item => item.data.title)
+      .join(" · ");
   } catch(e){ return "помилка"; }
 }
 
-// ===================== Оновлення =====================
-async function updateSignals(){
-  document.querySelector("#twitterTrends p").innerText = await getTwitterTrends();
+// ✦ Open‑Meteo погода (без ключа)
+async function getWeather(){
+  try {
+    const lat = 50.45, lon = 30.52; // Kyiv
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+    const data = await res.json();
+    const temp = data.current_weather.temperature;
+    const wind = data.current_weather.windspeed;
+    return `${temp}°C, вітер ${wind} м/с`;
+  } catch(e){ return "помилка"; }
+}
+
+// ✦ Оновлення кожні 30 сек
+async function update(){
   document.querySelector("#googleTrends p").innerText = await getGoogleTrends();
+  document.querySelector("#redditHot p").innerText = await getRedditHot();
   document.querySelector("#weatherNow p").innerText = await getWeather();
 }
 
-// Перший запуск
-updateSignals();
-// Повторювати кожні 30 секунд
-setInterval(updateSignals, 30000);
+// запустити
+update();
+setInterval(update, 30000);
+
 </script>
 
 </body>
