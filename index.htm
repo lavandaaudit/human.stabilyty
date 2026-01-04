@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Human State Lab | PDF Viewer</title>
 
-<!-- PDF.js бібліотека з CDN -->
+<!-- PDF.js бібліотека -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.100/pdf.min.js"></script>
 
 <style>
@@ -48,7 +48,7 @@ button:hover { background:#0ff; }
 </div>
 
 <script>
-// ✦ Анімація зірок
+// ✦ Зорі
 const stars = document.getElementById('stars');
 for(let i=0; i<200; i++){
   let s = document.createElement('div');
@@ -61,7 +61,10 @@ for(let i=0; i<200; i++){
 }
 
 // ✦ PDF.js налаштування
-const url = '333.pdf'; // <-- PDF має лежати в тій же папці
+
+// <-- ВАЖЛИВО: Вкажи тут повний URL до PDF на GitHub Pages -->
+const url = 'https://твій_користувач.github.io/твій_репозиторій/333.pdf';
+
 let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null;
 const scale = 1.3;
 const canvas = document.getElementById('pdf-render');
@@ -113,7 +116,7 @@ pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
   renderPage(pageNum);
 }).catch(err => {
   console.error(err);
-  alert('Помилка завантаження PDF: перевір файл 333.pdf та його розташування.');
+  alert('Помилка завантаження PDF. Перевір URL: ' + url);
 });
 </script>
 
