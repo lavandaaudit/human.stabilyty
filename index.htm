@@ -3,110 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Human State Lab | Live Signals</title>
+<title>Human State Lab | PDF Viewer</title>
+
+<!-- PDF.js бібліотека з CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.100/pdf.min.js"></script>
+
 <style>
 body, html {
-  margin: 0; padding: 0;
-  width: 100%; height: 100%;
-  background: #000; color: #cfefff;
-  font-family: 'Segoe UI', sans-serif;
-  overflow: hidden;
+  margin:0; padding:0;
+  width:100%; height:100%;
+  background:#000; color:#cfefff;
+  font-family:'Segoe UI', sans-serif;
+  overflow:hidden;
 }
-#stars { position:absolute; width:100%; height:100%; background:black; }
-#content { position:relative; z-index:2; padding:20px; }
-h1 { text-align:center; color:#0cf; font-size:2em; }
-.signal-panel {
-  display:flex; flex-wrap:wrap;
-  justify-content:center; gap:15px;
-  margin-top:25px;
+#stars { position:absolute; width:100%; height:100%; background:black; z-index:0; }
+#content { position:relative; z-index:2; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+h1 { text-align:center; color:#0cf; font-size:2em; margin-bottom:10px; }
+.pdf-container { width:90%; height:80%; border:2px solid #0cf; border-radius:8px; background:#111; display:flex; justify-content:center; align-items:center; }
+canvas { max-width:100%; max-height:100%; }
+.controls { margin-top:10px; display:flex; gap:10px; }
+button {
+  background:#0cf; color:#000; border:none; padding:5px 10px; border-radius:5px;
+  cursor:pointer; font-weight:bold;
 }
-.signal-box {
-  width:230px; padding:10px;
-  background:rgba(10,10,20,0.8);
-  border:1px solid #0cf;
-  border-radius:8px;
-}
-.signal-box h2 { margin:0; font-size:1em; color:#0ff; }
-.signal-box p { font-size:0.9em; margin-top:6px; min-height:1.4em; }
-.star {
-  position:absolute; width:2px; height:2px;
-  background:white; border-radius:50%;
-  opacity:0.7; animation:twinkle 2s infinite;
-}
+button:hover { background:#0ff; }
+.star { position:absolute; width:2px; height:2px; background:white; border-radius:50%; opacity:0.7; animation:twinkle 2s infinite; }
 @keyframes twinkle { 0%,100%{opacity:0.8;} 50%{opacity:0.2;} }
 </style>
 </head>
 <body>
 
 <div id="stars"></div>
+
 <div id="content">
-  <h1>Human State Lab | Live Signals</h1>
-  <div class="signal-panel">
-    <div class="signal-box" id="googleTrends"><h2>Google Search Trends</h2><p>Завантаження...</p></div>
-    <div class="signal-box" id="redditHot"><h2>Reddit Hot Topics</h2><p>Завантаження...</p></div>
-    <div class="signal-box" id="weatherNow"><h2>Погода (Kyiv)</h2><p>Завантаження...</p></div>
+  <h1>Human State Lab | PDF Viewer</h1>
+  <div class="pdf-container">
+    <canvas id="pdf-render"></canvas>
+  </div>
+  <div class="controls">
+    <button id="prev-page">Previous</button>
+    <span style="color:#0ff;">Page: <span id="page-num">1</span> / <span id="page-count">1</span></span>
+    <button id="next-page">Next</button>
   </div>
 </div>
 
 <script>
-// ✦ Анімація зірок
+// ✦ Зорі
 const stars = document.getElementById('stars');
 for(let i=0; i<200; i++){
   let s = document.createElement('div');
-  s.className = 'star';
-  s.style.top = Math.random()*100+'%';
-  s.style.left = Math.random()*100+'%';
-  s.style.width = 1+Math.random()*2+'px';
-  s.style.height = s.style.width;
+  s.className='star';
+  s.style.top=Math.random()*100+'%';
+  s.style.left=Math.random()*100+'%';
+  s.style.width=1+Math.random()*2+'px';
+  s.style.height=s.style.width;
   stars.appendChild(s);
 }
 
-// ✦ Google search тренди (Trendstools free JSON)
-async function getGoogleTrends() {
-  try {
-    const res = await fetch("https://trendstools.net/json/google/Ukraine");
-    const data = await res.json();
-    if(data && data.length) {
-      return data.slice(0,3).map(x => x.query || x).join(", ");
-    }
-    return "немає даних";
-  } catch(e){ return "помилка"; }
-}
+// ✦ PDF.js налаштування
+const url = 'yourfile.pdf'; // <-- заміни на свій PDF
+let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null;
+const scale = 1.3;
+const canvas = document.getElementById('pdf-render');
+const ctx = canvas.getContext('2d');
 
-// ✦ Reddit Hot Topics (відкрито без ключа)
-async function getRedditHot(){
-  try {
-    const res = await fetch("https://www.reddit.com/r/all/hot.json?limit=3");
-    const json = await res.json();
-    return json.data.children
-      .map(item => item.data.title)
-      .join(" · ");
-  } catch(e){ return "помилка"; }
-}
+// Рендер сторінки
+const renderPage = num => {
+  pageIsRendering = true;
+  pdfDoc.getPage(num).then(page => {
+    const viewport = page.getViewport({ scale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
 
-// ✦ Open‑Meteo погода (без ключа)
-async function getWeather(){
-  try {
-    const lat = 50.45, lon = 30.52; // Kyiv
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-    const data = await res.json();
-    const temp = data.current_weather.temperature;
-    const wind = data.current_weather.windspeed;
-    return `${temp}°C, вітер ${wind} м/с`;
-  } catch(e){ return "помилка"; }
-}
+    const renderCtx = { canvasContext: ctx, viewport };
+    page.render(renderCtx).promise.then(() => {
+      pageIsRendering = false;
+      if(pageNumIsPending !== null){
+        renderPage(pageNumIsPending);
+        pageNumIsPending = null;
+      }
+    });
 
-// ✦ Оновлення кожні 30 сек
-async function update(){
-  document.querySelector("#googleTrends p").innerText = await getGoogleTrends();
-  document.querySelector("#redditHot p").innerText = await getRedditHot();
-  document.querySelector("#weatherNow p").innerText = await getWeather();
-}
+    document.getElementById('page-num').textContent = num;
+  });
+};
 
-// запустити
-update();
-setInterval(update, 30000);
+// Перевірка черги
+const queueRenderPage = num => {
+  if(pageIsRendering) pageNumIsPending = num;
+  else renderPage(num);
+};
 
+// Кнопки Next / Previous
+document.getElementById('prev-page').addEventListener('click', () => {
+  if(pageNum <= 1) return;
+  pageNum--;
+  queueRenderPage(pageNum);
+});
+document.getElementById('next-page').addEventListener('click', () => {
+  if(pageNum >= pdfDoc.numPages) return;
+  pageNum++;
+  queueRenderPage(pageNum);
+});
+
+// Завантаження PDF
+pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
+  pdfDoc = pdfDoc_;
+  document.getElementById('page-count').textContent = pdfDoc.numPages;
+  renderPage(pageNum);
+}).catch(err => {
+  console.error(err);
+  alert('Помилка завантаження PDF');
+});
 </script>
 
 </body>
