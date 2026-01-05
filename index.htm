@@ -11,72 +11,47 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #000;
+  background: #000; /* чорний фон всього екрану */
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* зорі */
+/* зоряний фон */
 #stars {
   position: fixed;
   inset: 0;
   z-index: 0;
 }
 
-/* контейнер PDF з горизонтальною прокруткою */
+/* контейнер PDF */
 #reader {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
-  overflow: hidden;  /* сховаємо стандартний скрол */
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #000;
+  overflow: hidden;
+  padding: 0; /* без відступів, щоб PDF міг займати максимум */
+  box-sizing: border-box;
 }
 
-/* PDF iframe */
-#pdf-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  overflow: hidden; /* прокрутка через кнопки */
-  width: 100%;
-  height: 95%;
-}
-
+/* сам PDF */
 iframe {
   border: none;
-  background: #fff;
-  height: 100%;
-  min-width: 150%; /* робимо PDF ширшим за екран */
-  transition: transform 0.3s ease;
+  background: #fff; /* білий аркуш PDF */
+  transition: width 0.4s ease, height 0.4s ease, transform 0.4s ease; 
   box-shadow: 0 0 25px rgba(255,255,255,0.05);
 }
 
-/* кнопки навігації */
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  border: none;
-  font-size: 32px;
-  width: 60px;
-  height: 60px;
-  cursor: pointer;
-  border-radius: 50%;
-  user-select: none;
-  transition: background 0.3s;
+/* hover ефект */
+#reader:hover iframe {
+  transform: scale(1.02); /* легке збільшення при наведенні */
 }
-.nav-btn:hover {
-  background: rgba(255,255,255,0.3);
-}
-#nav-left { left: 10px; }
-#nav-right { right: 10px; }
 
 /* футер */
 #footer {
@@ -112,11 +87,7 @@ iframe {
 <div id="stars"></div>
 
 <div id="reader">
-  <button id="nav-left" class="nav-btn">&#8249;</button>
-  <div id="pdf-wrapper">
-    <iframe src="333.pdf"></iframe>
-  </div>
-  <button id="nav-right" class="nav-btn">&#8250;</button>
+  <iframe src="333.pdf"></iframe>
 </div>
 
 <div id="footer">LAVANDA · PDF READER · 2026</div>
@@ -133,33 +104,28 @@ for (let i = 0; i < 180; i++) {
   stars.appendChild(s);
 }
 
-/* горизонтальна прокрутка PDF через кнопки */
-const pdfWrapper = document.getElementById('pdf-wrapper');
-const iframe = pdfWrapper.querySelector('iframe');
-let scrollX = 0;
-const scrollStep = 50; // пікселів на клік
-
-document.getElementById('nav-left').addEventListener('click', () => {
-  scrollX = Math.max(scrollX - scrollStep, 0);
-  iframe.style.transform = `translateX(-${scrollX}px)`;
-});
-
-document.getElementById('nav-right').addEventListener('click', () => {
-  const maxScroll = iframe.offsetWidth - pdfWrapper.offsetWidth;
-  scrollX = Math.min(scrollX + scrollStep, maxScroll);
-  iframe.style.transform = `translateX(-${scrollX}px)`;
-});
-
-/* адаптивна висота PDF */
+/* адаптивне масштабування PDF на весь екран з пропорціями A4 */
+const iframe = document.querySelector('iframe');
 function resizePDF() {
-  const h = window.innerHeight * 0.95;
-  iframe.style.height = h + 'px';
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const aspectRatio = 820 / 1160; // пропорції A4
+
+  if (w / h > aspectRatio) {
+    // екран ширший, масштаб по висоті
+    iframe.style.height = h + 'px';
+    iframe.style.width = h * aspectRatio + 'px';
+  } else {
+    // екран вужчий, масштаб по ширині
+    iframe.style.width = w + 'px';
+    iframe.style.height = w / aspectRatio + 'px';
+  }
 }
+
+// плавне оновлення при ресайзі
 window.addEventListener('resize', resizePDF);
 resizePDF();
 </script>
 
 </body>
 </html>
-
-
