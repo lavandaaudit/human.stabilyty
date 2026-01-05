@@ -19,29 +19,22 @@ html, body {
   align-items: center;
 }
 
-/* зоряний фон */
-#stars {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-}
-
 /* контейнер PDF */
 #reader {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
-  background: #000; /* чорний фон навколо PDF */
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
   padding: 2%;
   box-sizing: border-box;
+  background: #000; /* чорний фон навколо PDF */
 }
 
-/* сам PDF */
+/* PDF iframe */
 iframe {
   border: none;
   background: #fff; /* білий аркуш PDF */
@@ -55,7 +48,7 @@ iframe {
   transform: scale(1.03);
 }
 
-/* підпис */
+/* футер */
 #footer {
   position: fixed;
   bottom: 16px;
@@ -75,9 +68,9 @@ iframe {
   background: #fff;
   border-radius: 50%;
   opacity: 0.6;
-  animation: twinkle 2.5s infinite ease-in-out;
 }
 
+/* анімація twinkle */
 @keyframes twinkle {
   0%,100% { opacity: 0.6; }
   50% { opacity: 0.2; }
@@ -95,21 +88,39 @@ iframe {
 <div id="footer">LAVANDA · PDF READER · 2026</div>
 
 <script>
-/* генерація зірок */
-const stars = document.getElementById('stars');
-for (let i = 0; i < 180; i++) {
+/* генерація зірок з випадковими позиціями та швидкістю */
+const starsContainer = document.getElementById('stars');
+const stars = [];
+const STAR_COUNT = 180;
+
+for (let i = 0; i < STAR_COUNT; i++) {
   const s = document.createElement('div');
   s.className = 'star';
-  s.style.top = Math.random() * 100 + '%';
-  s.style.left = Math.random() * 100 + '%';
-  s.style.animationDelay = Math.random() * 3 + 's';
-  stars.appendChild(s);
+  s.style.top = Math.random() * window.innerHeight + 'px';
+  s.style.left = Math.random() * window.innerWidth + 'px';
+  s.style.width = (Math.random() * 2 + 1) + 'px';
+  s.style.height = s.style.width;
+  s.dataset.speed = (Math.random() * 0.5 + 0.1); // швидкість руху
+  starsContainer.appendChild(s);
+  stars.push(s);
 }
+
+/* рух зірок крізь PDF */
+function animateStars() {
+  for (let s of stars) {
+    let top = parseFloat(s.style.top);
+    top += s.dataset.speed;
+    if (top > window.innerHeight) top = 0; // обертаємо зверху
+    s.style.top = top + 'px';
+  }
+  requestAnimationFrame(animateStars);
+}
+animateStars();
 
 /* адаптивне масштабування PDF */
 const iframe = document.querySelector('iframe');
 function resizePDF() {
-  const w = window.innerWidth * 0.96; // залишаємо невеликий відступ
+  const w = window.innerWidth * 0.96; // невеликий відступ
   const h = window.innerHeight * 0.96;
   const aspectRatio = 820 / 1160; // стандартний A4
   if (w / h > aspectRatio) {
@@ -119,13 +130,19 @@ function resizePDF() {
     iframe.style.width = w + 'px';
     iframe.style.height = w / aspectRatio + 'px';
   }
+
+  // оновлюємо позиції зірок для нового розміру екрану
+  for (let s of stars) {
+    s.style.left = Math.min(parseFloat(s.style.left), window.innerWidth) + 'px';
+    s.style.top = Math.min(parseFloat(s.style.top), window.innerHeight) + 'px';
+  }
 }
 
 // плавне оновлення при ресайзі
 let resizeTimeout;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(resizePDF, 50); // невелика затримка для плавності
+  resizeTimeout = setTimeout(resizePDF, 50);
 });
 resizePDF();
 </script>
