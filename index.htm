@@ -11,15 +11,12 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #000; /* чорний фон всього екрану */
+  background: #000;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
-/* зоряний фон */
+/* зоряний фон з parallax */
 #stars {
   position: fixed;
   inset: 0;
@@ -32,26 +29,62 @@ html, body {
   z-index: 1;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* wrapper для drag/scroll */
+#pdf-wrapper {
+  position: relative;
+  width: 100%;
+  height: 95%;
   overflow: hidden;
-  padding: 0; /* без відступів, щоб PDF міг займати максимум */
-  box-sizing: border-box;
+  cursor: grab;
 }
 
 /* сам PDF */
 iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   border: none;
-  background: #fff; /* білий аркуш PDF */
-  transition: width 0.4s ease, height 0.4s ease, transform 0.4s ease; 
+  background: #fff;
+  min-width: 150%;
+  min-height: 100%;
+  transform: translate(0px, 0px) scale(1);
+  transition: transform 0.3s ease;
   box-shadow: 0 0 25px rgba(255,255,255,0.05);
+  opacity: 0;
+}
+iframe.loaded {
+  opacity: 1;
+  transition: opacity 0.6s ease, transform 0.4s ease;
 }
 
-/* hover ефект */
-#reader:hover iframe {
-  transform: scale(1.02); /* легке збільшення при наведенні */
+/* кнопки навігації */
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  border-radius: 50%;
+  user-select: none;
+  transition: background 0.3s;
 }
+.nav-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+#nav-left { left: 10px; }
+#nav-right { right: 10px; }
 
 /* футер */
 #footer {
@@ -68,9 +101,6 @@ iframe {
 /* зорі */
 .star {
   position: absolute;
-  width: 2px;
-  height: 2px;
-  background: #fff;
   border-radius: 50%;
   opacity: 0.6;
   animation: twinkle 2.5s infinite ease-in-out;
@@ -87,45 +117,93 @@ iframe {
 <div id="stars"></div>
 
 <div id="reader">
-  <iframe src="333.pdf"></iframe>
+  <button id="nav-left" class="nav-btn">&#8249;</button>
+  <div id="pdf-wrapper">
+    <iframe src="333.pdf"></iframe>
+  </div>
+  <button id="nav-right" class="nav-btn">&#8250;</button>
 </div>
 
 <div id="footer">LAVANDA · PDF READER · 2026</div>
 
 <script>
-/* генерація зірок */
+/* генерація зірок з parallax */
 const stars = document.getElementById('stars');
-for (let i = 0; i < 180; i++) {
+for (let i = 0; i < 200; i++) {
   const s = document.createElement('div');
   s.className = 'star';
+  const size = Math.random() * 3 + 1; // різні розміри
+  s.style.width = size + 'px';
+  s.style.height = size + 'px';
   s.style.top = Math.random() * 100 + '%';
   s.style.left = Math.random() * 100 + '%';
   s.style.animationDelay = Math.random() * 3 + 's';
+  s.dataset.speed = Math.random() * 0.5 + 0.2; // швидкість parallax
   stars.appendChild(s);
 }
 
-/* адаптивне масштабування PDF на весь екран з пропорціями A4 */
-const iframe = document.querySelector('iframe');
-function resizePDF() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const aspectRatio = 820 / 1160; // пропорції A4
+/* parallax рух при миші */
+document.addEventListener('mousemove', e => {
+  const cx = e.clientX / window.innerWidth - 0.5;
+  const cy = e.clientY / window.innerHeight - 0.5;
+  document.querySelectorAll('.star').forEach(star => {
+    const speed = star.dataset.speed;
+    star.style.transform = `translate(${cx * 50 * speed}px, ${cy * 50 * speed}px)`;
+  });
+});
 
-  if (w / h > aspectRatio) {
-    // екран ширший, масштаб по висоті
-    iframe.style.height = h + 'px';
-    iframe.style.width = h * aspectRatio + 'px';
-  } else {
-    // екран вужчий, масштаб по ширині
-    iframe.style.width = w + 'px';
-    iframe.style.height = w / aspectRatio + 'px';
-  }
+/* PDF адаптивно */
+const pdfWrapper = document.getElementById('pdf-wrapper');
+const iframe = pdfWrapper.querySelector('iframe');
+iframe.onload = () => iframe.classList.add('loaded');
+
+// масштабування колесом
+let scale = 1;
+pdfWrapper.addEventListener('wheel', e => {
+  e.preventDefault();
+  scale += -e.deltaY * 0.001;
+  scale = Math.min(Math.max(0.5, scale), 3); // обмеження масштабу
+  updateTransform();
+});
+
+// drag PDF
+let isDragging = false, startX, startY, currentX = 0, currentY = 0;
+pdfWrapper.addEventListener('mousedown', e => {
+  isDragging = true;
+  startX = e.clientX - currentX;
+  startY = e.clientY - currentY;
+  pdfWrapper.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  currentX = e.clientX - startX;
+  currentY = e.clientY - startY;
+  updateTransform();
+});
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  pdfWrapper.style.cursor = 'grab';
+});
+
+// кнопки навігації
+const step = 50; // пікселі на клік
+document.getElementById('nav-left').addEventListener('click', () => { currentX += step; updateTransform(); });
+document.getElementById('nav-right').addEventListener('click', () => { currentX -= step; updateTransform(); });
+
+// функція оновлення трансформації
+function updateTransform() {
+  iframe.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
 }
 
-// плавне оновлення при ресайзі
+// адаптивна висота iframe
+function resizePDF() {
+  const h = window.innerHeight * 0.95;
+  iframe.style.height = h + 'px';
+}
 window.addEventListener('resize', resizePDF);
 resizePDF();
 </script>
 
 </body>
 </html>
+
