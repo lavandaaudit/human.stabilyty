@@ -16,7 +16,7 @@ html, body {
   overflow: hidden;
 }
 
-/* Зоряний фон з parallax */
+/* Зорі з parallax */
 #stars {
   position: fixed;
   inset: 0;
@@ -84,7 +84,25 @@ iframe.loaded {
 #nav-left { left: 10px; }
 #nav-right { right: 10px; }
 
-/* Футер */
+/* Кнопка повернення на першу сторінку */
+#first-page {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  z-index: 2;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+#first-page:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Футер і індикатор сторінки */
 #footer {
   position: fixed;
   bottom: 16px;
@@ -93,6 +111,16 @@ iframe.loaded {
   color: #888;
   font-size: 12px;
   letter-spacing: 0.15em;
+  z-index: 2;
+}
+
+/* Індикатор сторінки */
+#page-indicator {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  color: #888;
+  font-size: 12px;
   z-index: 2;
 }
 
@@ -119,12 +147,14 @@ iframe.loaded {
     <iframe src="333.pdf"></iframe>
   </div>
   <button id="nav-right" class="nav-btn">&#8250;</button>
+  <button id="first-page">⭮ Перша сторінка</button>
 </div>
 
+<div id="page-indicator">Сторінка 1</div>
 <div id="footer">LAVANDA · PDF READER · 2026</div>
 
 <script>
-/* Генерація зірок з parallax */
+/* Генерація зірок */
 const stars = document.getElementById('stars');
 for (let i = 0; i < 200; i++) {
   const s = document.createElement('div');
@@ -139,7 +169,7 @@ for (let i = 0; i < 200; i++) {
   stars.appendChild(s);
 }
 
-/* Parallax при русі миші */
+/* Parallax рух */
 document.addEventListener('mousemove', e => {
   const cx = e.clientX / window.innerWidth - 0.5;
   const cy = e.clientY / window.innerHeight - 0.5;
@@ -187,12 +217,27 @@ const step = 50;
 document.getElementById('nav-left').addEventListener('click', () => { currentX += step; updateTransform(); });
 document.getElementById('nav-right').addEventListener('click', () => { currentX -= step; updateTransform(); });
 
+// Повернення на першу сторінку
+document.getElementById('first-page').addEventListener('click', () => {
+  currentX = 0;
+  currentY = 0;
+  scale = 1;
+  updateTransform();
+});
+
 // Оновлення трансформації
 function updateTransform() {
   iframe.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
 }
 
-// Адаптивна висота PDF
+// Індикатор сторінки (умовний, можна інтегрувати з PDF.js для реальних сторінок)
+const pageIndicator = document.getElementById('page-indicator');
+function updatePageIndicator(page = 1) {
+  pageIndicator.textContent = `Сторінка ${page}`;
+}
+updatePageIndicator(1);
+
+// Адаптивна висота iframe
 function resizePDF() {
   iframe.style.height = window.innerHeight + 'px';
   iframe.style.width = window.innerWidth + 'px';
@@ -200,7 +245,7 @@ function resizePDF() {
 window.addEventListener('resize', resizePDF);
 resizePDF();
 
-// Fullscreen підтримка
+// Повноекранний режим
 document.addEventListener('keydown', e => {
   if (e.key === 'f' || e.key === 'F') {
     if (!document.fullscreenElement) {
@@ -214,5 +259,6 @@ document.addEventListener('keydown', e => {
 
 </body>
 </html>
+
 
 
