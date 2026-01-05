@@ -32,30 +32,28 @@ html, body {
   z-index: 1;
   width: 100%;
   height: 100%;
-  background: #000; /* чорний фон навколо PDF */
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2%;
-  box-sizing: border-box;
   overflow: hidden;
+  padding: 0; /* без відступів, щоб PDF міг займати максимум */
+  box-sizing: border-box;
 }
 
 /* сам PDF */
 iframe {
   border: none;
   background: #fff; /* білий аркуш PDF */
-  border-radius: 2px;
-  transition: width 0.4s ease, height 0.4s ease, transform 0.4s ease; /* плавне масштабування та ефект hover */
+  transition: width 0.4s ease, height 0.4s ease, transform 0.4s ease; 
   box-shadow: 0 0 25px rgba(255,255,255,0.05);
 }
 
-/* ефект при наведенні */
+/* hover ефект */
 #reader:hover iframe {
-  transform: scale(1.03); /* трохи збільшуємо листок */
+  transform: scale(1.02); /* легке збільшення при наведенні */
 }
 
-/* підпис */
+/* футер */
 #footer {
   position: fixed;
   bottom: 16px;
@@ -106,29 +104,29 @@ for (let i = 0; i < 180; i++) {
   stars.appendChild(s);
 }
 
-/* адаптивне масштабування PDF з плавною анімацією */
+/* адаптивне масштабування PDF на весь екран з пропорціями A4 */
 const iframe = document.querySelector('iframe');
 function resizePDF() {
-  const w = window.innerWidth * 0.96; // відступи 4%
-  const h = window.innerHeight * 0.96;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
   const aspectRatio = 820 / 1160; // пропорції A4
+
   if (w / h > aspectRatio) {
+    // екран ширший, масштаб по висоті
     iframe.style.height = h + 'px';
     iframe.style.width = h * aspectRatio + 'px';
   } else {
+    // екран вужчий, масштаб по ширині
     iframe.style.width = w + 'px';
     iframe.style.height = w / aspectRatio + 'px';
   }
 }
 
 // плавне оновлення при ресайзі
-let resizeTimeout;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(resizePDF, 50); // невелика затримка для плавності
-});
+window.addEventListener('resize', resizePDF);
 resizePDF();
 </script>
 
 </body>
 </html>
+
