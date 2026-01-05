@@ -16,17 +16,16 @@ html, body {
   overflow: hidden;
 }
 
-/* зоряний фон з parallax */
+/* Зоряний фон з parallax */
 #stars {
   position: fixed;
   inset: 0;
   z-index: 0;
 }
 
-/* контейнер PDF */
+/* Контейнер PDF */
 #reader {
   position: relative;
-  z-index: 1;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -35,16 +34,16 @@ html, body {
   align-items: center;
 }
 
-/* wrapper для drag/scroll */
+/* Wrapper для drag/scroll */
 #pdf-wrapper {
   position: relative;
   width: 100%;
-  height: 95%;
+  height: 100%;
   overflow: hidden;
   cursor: grab;
 }
 
-/* сам PDF */
+/* PDF iframe */
 iframe {
   position: absolute;
   top: 0;
@@ -54,16 +53,15 @@ iframe {
   min-width: 150%;
   min-height: 100%;
   transform: translate(0px, 0px) scale(1);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.6s ease;
   box-shadow: 0 0 25px rgba(255,255,255,0.05);
   opacity: 0;
 }
 iframe.loaded {
   opacity: 1;
-  transition: opacity 0.6s ease, transform 0.4s ease;
 }
 
-/* кнопки навігації */
+/* Кнопки навігації */
 .nav-btn {
   position: absolute;
   top: 50%;
@@ -86,7 +84,7 @@ iframe.loaded {
 #nav-left { left: 10px; }
 #nav-right { right: 10px; }
 
-/* футер */
+/* Футер */
 #footer {
   position: fixed;
   bottom: 16px;
@@ -98,14 +96,13 @@ iframe.loaded {
   z-index: 2;
 }
 
-/* зорі */
+/* Зорі */
 .star {
   position: absolute;
   border-radius: 50%;
   opacity: 0.6;
   animation: twinkle 2.5s infinite ease-in-out;
 }
-
 @keyframes twinkle {
   0%,100% { opacity: 0.6; }
   50% { opacity: 0.2; }
@@ -127,22 +124,22 @@ iframe.loaded {
 <div id="footer">LAVANDA · PDF READER · 2026</div>
 
 <script>
-/* генерація зірок з parallax */
+/* Генерація зірок з parallax */
 const stars = document.getElementById('stars');
 for (let i = 0; i < 200; i++) {
   const s = document.createElement('div');
   s.className = 'star';
-  const size = Math.random() * 3 + 1; // різні розміри
+  const size = Math.random() * 3 + 1;
   s.style.width = size + 'px';
   s.style.height = size + 'px';
   s.style.top = Math.random() * 100 + '%';
   s.style.left = Math.random() * 100 + '%';
   s.style.animationDelay = Math.random() * 3 + 's';
-  s.dataset.speed = Math.random() * 0.5 + 0.2; // швидкість parallax
+  s.dataset.speed = Math.random() * 0.5 + 0.2;
   stars.appendChild(s);
 }
 
-/* parallax рух при миші */
+/* Parallax при русі миші */
 document.addEventListener('mousemove', e => {
   const cx = e.clientX / window.innerWidth - 0.5;
   const cy = e.clientY / window.innerHeight - 0.5;
@@ -152,21 +149,21 @@ document.addEventListener('mousemove', e => {
   });
 });
 
-/* PDF адаптивно */
+/* PDF логіка */
 const pdfWrapper = document.getElementById('pdf-wrapper');
 const iframe = pdfWrapper.querySelector('iframe');
 iframe.onload = () => iframe.classList.add('loaded');
 
-// масштабування колесом
+// Масштабування колесом
 let scale = 1;
 pdfWrapper.addEventListener('wheel', e => {
   e.preventDefault();
   scale += -e.deltaY * 0.001;
-  scale = Math.min(Math.max(0.5, scale), 3); // обмеження масштабу
+  scale = Math.min(Math.max(0.5, scale), 3);
   updateTransform();
 });
 
-// drag PDF
+// Drag PDF
 let isDragging = false, startX, startY, currentX = 0, currentY = 0;
 pdfWrapper.addEventListener('mousedown', e => {
   isDragging = true;
@@ -185,25 +182,37 @@ window.addEventListener('mouseup', () => {
   pdfWrapper.style.cursor = 'grab';
 });
 
-// кнопки навігації
-const step = 50; // пікселі на клік
+// Кнопки навігації
+const step = 50;
 document.getElementById('nav-left').addEventListener('click', () => { currentX += step; updateTransform(); });
 document.getElementById('nav-right').addEventListener('click', () => { currentX -= step; updateTransform(); });
 
-// функція оновлення трансформації
+// Оновлення трансформації
 function updateTransform() {
   iframe.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
 }
 
-// адаптивна висота iframe
+// Адаптивна висота PDF
 function resizePDF() {
-  const h = window.innerHeight * 0.95;
-  iframe.style.height = h + 'px';
+  iframe.style.height = window.innerHeight + 'px';
+  iframe.style.width = window.innerWidth + 'px';
 }
 window.addEventListener('resize', resizePDF);
 resizePDF();
+
+// Fullscreen підтримка
+document.addEventListener('keydown', e => {
+  if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+});
 </script>
 
 </body>
 </html>
+
 
