@@ -36,15 +36,21 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 2%; /* невеликий відступ від країв */
+  box-sizing: border-box;
 }
 
 /* сам PDF */
 iframe {
-  width: 90%;       /* щоб залишався білий аркуш і відступи навколо */
-  height: 95%;
-  border: none;      /* без рамки */
-  background: transparent; /* прозорий, щоб не було сірого фону */
-  box-shadow: none;  /* прибираємо будь-які тіні */
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border: none;
+  background: #fff; /* білий аркуш PDF */
+  box-shadow: 0 0 20px rgba(255,255,255,0.05); /* дуже легке світіння, можна прибрати */
+  border-radius: 2px;
+  object-fit: contain; /* щоб масштабувався пропорційно */
 }
 
 /* підпис */
@@ -97,6 +103,25 @@ for (let i = 0; i < 180; i++) {
   s.style.animationDelay = Math.random() * 3 + 's';
   stars.appendChild(s);
 }
+
+/* автоматичне масштабування PDF для збереження пропорцій */
+const iframe = document.querySelector('iframe');
+function resizePDF() {
+  const w = window.innerWidth * 0.96; // залишаємо невеликий відступ
+  const h = window.innerHeight * 0.96;
+  const aspectRatio = 820 / 1160; // стандартний A4
+  if (w / h > aspectRatio) {
+    // ширина занадто велика
+    iframe.style.height = h + 'px';
+    iframe.style.width = h * aspectRatio + 'px';
+  } else {
+    // висота занадто велика
+    iframe.style.width = w + 'px';
+    iframe.style.height = w / aspectRatio + 'px';
+  }
+}
+window.addEventListener('resize', resizePDF);
+resizePDF(); // виклик при завантаженні
 </script>
 
 </body>
